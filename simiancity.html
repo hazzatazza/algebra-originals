@@ -10,7 +10,8 @@
         body.day-mode { background-color: #00b4ff; color: #333; }
         canvas { background-color: #0a0a20; border-bottom: 5px solid #00d2ff; display: none; box-shadow: 0 0 60px rgba(0, 210, 255, 0.3); }
         canvas.day-mode { background-color: #87CEEB; border-bottom: 5px solid #4CAF50; }
-        #menu { text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); color: #333; z-index: 101; }
+        #menu, #gameOver { text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); color: #333; z-index: 101; }
+        #gameOver { position: absolute; display: none; } 
         .btn { padding: 15px 25px; font-size: 20px; margin: 10px; cursor: pointer; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; }
         #toggleContainer { position: absolute; top: 10px; left: 10px; z-index: 100; }
         .toggle-btn { padding: 10px 20px; cursor: pointer; border-radius: 5px; border: 2px solid #00d2ff; background: #1a1a2e; color: white; font-weight: bold; outline: none; }
@@ -31,6 +32,13 @@
         <button class="btn" onclick="startGame('\u{1F98D}')"><span class="flipped-icon">&#129421;</span> Gorilla</button>
         <button class="btn" onclick="startGame('\u{1F9A7}')"><span class="flipped-icon">&#129447;</span> Orangutan</button>
     </div>
+
+    <div id="gameOver">
+        <h1 style="color: #e11d48;">GAME OVER</h1>
+        <p>Stop Monkeying Around!</p>
+        <h2 style="font-size: 40px;">SCORE: <span id="finalScore">0</span></h2>
+        <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
+    </div>
     
     <div id="ui" style="display:none">
         <div>SCORE: <span id="currentScore">0</span></div>
@@ -42,6 +50,8 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const menu = document.getElementById('menu');
+        const gameOverUI = document.getElementById('gameOver');
+        const finalScoreText = document.getElementById('finalScore');
         const ui = document.getElementById('ui');
         const body = document.getElementById('gameBody');
         
@@ -93,13 +103,15 @@
 
         function startGame(emoji) {
             player.emoji = emoji;
-            menu.style.display = 'none'; ui.style.display = 'block'; canvas.style.display = 'block';
+            menu.style.display = 'none'; 
+            ui.style.display = 'block'; 
+            canvas.style.display = 'block';
             gameActive = true;
             loop();
         }
 
         window.addEventListener('keydown', (e) => {
-            if ((e.code === 'Space' || e.code === 'ArrowUp') && player.grounded) {
+            if ((e.code === 'Space' || e.code === 'ArrowUp') && player.grounded && gameActive) {
                 e.preventDefault();
                 player.dy = player.jumpForce;
                 player.grounded = false;
@@ -110,7 +122,6 @@
             const words = text.split(' ');
             let lines = [];
             let currentLine = words[0];
-
             for (let i = 1; i < words.length; i++) {
                 if (ctx.measureText(currentLine + " " + words[i]).width < maxWidth) {
                     currentLine += " " + words[i];
@@ -120,7 +131,6 @@
                 }
             }
             lines.push(currentLine);
-
             let startYAdjusted = startY - ((lines.length - 1) * lineHeight) / 2;
             lines.forEach((line, index) => {
                 ctx.fillText(line, centerX, startYAdjusted + (index * lineHeight));
@@ -197,7 +207,6 @@
 
             if (frame % 110 === 0) {
                 const isTall = Math.random() > 0.5;
-                // INCREASED SIZES: Tall is now 125px (up from 110), Wide is 190px (up from 170)
                 let w = isTall ? 55 : 190;
                 let h = isTall ? 125 : 65; 
                 obstacles.push({ x: 1000, w: w, h: h, type: 'city' });
@@ -208,6 +217,14 @@
             let gameSpeed = Math.min(15, 8 + score/4000);
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 let obs = obstacles[i]; obs.x -= gameSpeed; 
+                
+                // --- ACCURATE HITBOX LOGIC ---
+                // We subtract 15px of "padding" from the player's width/height to make it pixel-accurate
+                let pX = player.x + 15; 
+                let pW = 20; // Tight width
+                let pH = 50; // Tight height
+                let pY = player.y - pH;
+
                 if (obs.type === 'city') {
                     ctx.fillStyle = isNight ? '#1a1a2e' : '#334155'; ctx.fillRect(obs.x, canvas.height - obs.h, obs.w, obs.h);
                     ctx.strokeStyle = isNight ? '#00d2ff' : '#1e293b'; ctx.strokeRect(obs.x, canvas.height - obs.h, obs.w, obs.h);
@@ -215,16 +232,27 @@
                     for(let wx = 10; wx < obs.w - 10; wx += 15) {
                         for(let wh = 10; wh < obs.h - 10; wh += 20) { ctx.fillRect(obs.x + wx, (canvas.height - obs.h) + wh, 6, 8); }
                     }
-                    if (player.x + 20 > obs.x && player.x - 20 < obs.x + obs.w && player.y > canvas.height - obs.h) gameActive = false;
+                    // Accurate Check for Buildings
+                    if (pX < obs.x + obs.w && pX + pW > obs.x && player.y > canvas.height - obs.h) endGame();
                 } else {
                     ctx.font = '80px serif'; ctx.fillText('\u{1F681}', obs.x, obs.y);
-                    if (player.x + 35 > obs.x && player.x < obs.x + 65 && player.y - 40 < obs.y && player.y > obs.y - 40) gameActive = false;
+                    // Accurate Check for Flying Obstacles
+                    if (pX < obs.x + 65 && pX + pW > obs.x && player.y - 45 < obs.y && player.y > obs.y - 40) endGame();
                 }
                 if (obs.x < -200) obstacles.splice(i, 1);
             }
-            if (!gameActive) { alert(`SCORE: ${score}`); location.reload(); }
-            score++; document.getElementById('currentScore').innerText = score; frame++;
-            requestAnimationFrame(loop);
+            
+            if (gameActive) {
+                score++; document.getElementById('currentScore').innerText = score; frame++;
+                requestAnimationFrame(loop);
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            ui.style.display = 'none';
+            finalScoreText.innerText = score;
+            gameOverUI.style.display = 'block';
         }
     </script>
 </body>
