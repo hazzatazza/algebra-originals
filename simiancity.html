@@ -7,13 +7,9 @@
     
     <style>
         body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #050510; font-family: 'Segoe UI', sans-serif; color: white; overflow: hidden; transition: background-color 0.5s; }
-        /* Day Mode Sky Background */
-        body.day-mode { background-color: #0077be; color: #333; }
-        
+        body.day-mode { background-color: #00b4ff; color: #333; }
         canvas { background-color: #0a0a20; border-bottom: 5px solid #00d2ff; display: none; box-shadow: 0 0 60px rgba(0, 210, 255, 0.3); }
-        /* Canvas Day Mode Sky */
-        canvas.day-mode { background-color: #52b2f2; border-bottom: 5px solid #4CAF50; box-shadow: 0 0 40px rgba(255, 255, 255, 0.2); }
-
+        canvas.day-mode { background-color: #87CEEB; border-bottom: 5px solid #4CAF50; }
         #menu { text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); color: #333; z-index: 101; }
         .btn { padding: 15px 25px; font-size: 20px; margin: 10px; cursor: pointer; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; }
         #toggleContainer { position: absolute; top: 10px; left: 10px; z-index: 100; }
@@ -58,7 +54,7 @@
         
         const backgroundBuildings = [];
         const stars = [];
-        const clouds = [];
+        const clouds = [{x: 100, y: 70, s: 0.8}, {x: 400, y: 100, s: 1.2}, {x: 700, y: 50, s: 0.5}];
         const simianTypes = ['\u{1F412}', '\u{1F98D}', '\u{1F9A7}'];
         const puns = [
             "RICK APELEY: NEVER GONNA GIBBON YOU UP TONIGHT \u{1F3A4}", 
@@ -76,20 +72,18 @@
 
         function initBackground() {
             for(let s=0; s<50; s++) stars.push({ x: Math.random() * 950, y: Math.random() * 200, size: Math.random() * 2 });
-            for(let c=0; c<5; c++) clouds.push({ x: Math.random() * 950, y: 30 + Math.random() * 80, speed: 0.1 + Math.random() * 0.3 });
-            
-            for(let i=0; i<45; i++) {
+            for(let i=0; i<60; i++) {
                 const height = 220 + Math.random() * 180;
-                const width = 130 + Math.random() * 40; 
+                const width = 115 + Math.random() * 30; 
                 const pun = Math.random() > 0.5 ? puns[Math.floor(Math.random()*puns.length)] : null;
                 const windows = [];
-                const startH = pun ? 90 : 20;
-                for(let w=15; w<width-20; w+=30) {
-                    for(let h=startH; h<height-40; h+=45) { 
-                        windows.push({ x: w, y: h, active: Math.random() > 0.4, occupant: Math.random() > 0.6 ? simianTypes[Math.floor(Math.random()*3)] : null, flip: Math.random() > 0.5 ? -1 : 1 });
+                const startH = pun ? 95 : 20;
+                for(let w=10; w<width-15; w+=25) {
+                    for(let h=startH; h<height-40; h+=40) { 
+                        windows.push({ x: w, y: h, active: Math.random() > 0.4, occupant: Math.random() > 0.7 ? simianTypes[Math.floor(Math.random()*3)] : null, flip: Math.random() > 0.5 ? -1 : 1 });
                     }
                 }
-                backgroundBuildings.push({ x: i * 150, w: width, h: height, windows, pun, hasSatellite: Math.random() > 0.6 });
+                backgroundBuildings.push({ x: i * 140, w: width, h: height, windows, pun, hasSatellite: Math.random() > 0.6 });
             }
         }
         initBackground();
@@ -116,67 +110,72 @@
             const words = text.split(' ');
             let lines = [];
             let currentLine = words[0];
+
             for (let i = 1; i < words.length; i++) {
-                if (ctx.measureText(currentLine + " " + words[i]).width < maxWidth) { currentLine += " " + words[i]; } 
-                else { lines.push(currentLine); currentLine = words[i]; }
+                if (ctx.measureText(currentLine + " " + words[i]).width < maxWidth) {
+                    currentLine += " " + words[i];
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
             }
             lines.push(currentLine);
+
             let startYAdjusted = startY - ((lines.length - 1) * lineHeight) / 2;
-            lines.forEach((line, index) => { ctx.fillText(line, centerX, startYAdjusted + (index * lineHeight)); });
+            lines.forEach((line, index) => {
+                ctx.fillText(line, centerX, startYAdjusted + (index * lineHeight));
+            });
         }
 
         function drawSky() {
             if (isNight) {
                 ctx.font = '50px serif';
-                ctx.fillText('🌙', 800, 80);
+                ctx.fillText('🌙', 850, 80);
                 ctx.fillStyle = "white";
                 stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill(); });
             } else {
                 ctx.font = '60px serif';
-                ctx.fillText('☀️', 800, 90);
+                ctx.fillText('☀️', 850, 90);
                 ctx.font = '40px serif';
                 clouds.forEach(c => {
                     ctx.fillText('☁️', c.x, c.y);
-                    c.x -= c.speed;
+                    c.x -= c.s;
                     if (c.x < -100) c.x = 1000;
                 });
             }
         }
 
         function drawBackground() {
-            bgOffset -= 1.5;
-            if (bgOffset < -6750) bgOffset = 0;
+            bgOffset -= 2;
+            if (bgOffset < -8400) bgOffset = 0;
             backgroundBuildings.forEach((b) => {
                 let drawX = b.x + bgOffset;
-                if (drawX > 1000) return; if (drawX < -250) drawX += 6750; 
-                
+                if (drawX > 1000) return; if (drawX < -250) drawX += 8400; 
                 if (b.hasSatellite) {
-                    ctx.fillStyle = isNight ? '#334155' : '#4b5563';
+                    ctx.fillStyle = isNight ? '#334155' : '#64748b';
                     ctx.beginPath(); ctx.arc(drawX + 30, canvas.height - b.h - 5, 10, 0, Math.PI, true); ctx.fill();
                     ctx.fillRect(drawX + 28, canvas.height - b.h - 5, 4, 10);
                 }
                 ctx.fillStyle = isNight ? '#0f172a' : '#5a616d';
                 ctx.fillRect(drawX, canvas.height - b.h, b.w, b.h);
-
                 if (b.pun) {
                     const signH = 75;
                     ctx.fillStyle = isNight ? '#1e293b' : '#cbd5e1';
                     ctx.fillRect(drawX + 8, canvas.height - b.h + 8, b.w - 16, signH); 
-                    ctx.strokeStyle = isNight ? '#ff00ff' : '#2563eb';
+                    ctx.strokeStyle = isNight ? '#ff00ff' : '#4f46e5';
                     ctx.strokeRect(drawX + 8, canvas.height - b.h + 8, b.w - 16, signH);
                     ctx.fillStyle = isNight ? '#00d2ff' : '#1e1b4b';
                     ctx.font = 'bold 10px "Segoe UI"'; ctx.textAlign = 'center';
                     wrapAndCenterText(b.pun, drawX + b.w/2, canvas.height - b.h + 8 + (signH/2), b.w - 20, 13);
                 }
-
                 ctx.textAlign = 'left';
                 b.windows.forEach(win => {
                     if (win.active || !isNight) {
                         ctx.fillStyle = isNight ? '#1e293b' : '#f8fafc'; 
-                        ctx.fillRect(drawX + win.x, (canvas.height - b.h) + win.y, 22, 28);
+                        ctx.fillRect(drawX + win.x, (canvas.height - b.h) + win.y, 18, 24);
                         if (win.occupant) {
-                            ctx.save(); ctx.translate(drawX + win.x + 11, (canvas.height - b.h) + win.y + 22);
-                            ctx.scale(win.flip, 1); ctx.font = '16px serif'; ctx.textAlign = 'center';
+                            ctx.save(); ctx.translate(drawX + win.x + 9, (canvas.height - b.h) + win.y + 18);
+                            ctx.scale(win.flip, 1); ctx.font = '14px serif'; ctx.textAlign = 'center';
                             ctx.fillText(win.occupant, 0, 0); ctx.restore();
                         }
                     }
@@ -189,19 +188,18 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawSky();
             drawBackground();
-
             player.dy += player.gravity; player.y += player.dy;
             if (player.y >= GROUND_Y) { player.y = GROUND_Y; player.dy = 0; player.grounded = true; }
             ctx.fillStyle = isNight ? "#00d2ff" : "#4CAF50"; ctx.fillRect(0, 440, 950, 2);
-
             ctx.save(); ctx.translate(player.x + 25, player.y); ctx.scale(-1, 1);
             ctx.font = '60px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; 
             ctx.fillText(player.emoji, 0, 0); ctx.restore();
 
             if (frame % 110 === 0) {
                 const isTall = Math.random() > 0.5;
-                let w = isTall ? 55 : 170;
-                let h = isTall ? 110 : 65; 
+                // INCREASED SIZES: Tall is now 125px (up from 110), Wide is 190px (up from 170)
+                let w = isTall ? 55 : 190;
+                let h = isTall ? 125 : 65; 
                 obstacles.push({ x: 1000, w: w, h: h, type: 'city' });
             }
             if (frame % 110 === 55 && score > 600) { 
@@ -224,19 +222,10 @@
                 }
                 if (obs.x < -200) obstacles.splice(i, 1);
             }
-            if (!gameActive) { alert(`CRASHED! SCORE: ${score}`); location.reload(); }
+            if (!gameActive) { alert(`SCORE: ${score}`); location.reload(); }
             score++; document.getElementById('currentScore').innerText = score; frame++;
             requestAnimationFrame(loop);
         }
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
