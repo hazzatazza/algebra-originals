@@ -18,9 +18,22 @@
         .day-mode .toggle-btn { background: #fff; color: #333; border-color: #4CAF50; }
         .flipped-icon { transform: scaleX(-1); display: inline-block; }
         #ui { position: absolute; top: 50px; width: 850px; text-align: center; font-size: 28px; font-weight: bold; pointer-events: none; z-index: 10; font-family: 'Courier New', monospace; }
+        
+        /* New styling for the bottom left image */
+        .corner-image {
+            position: fixed;
+            bottom: -17px;
+            left: 10px;
+            width: 150px; /* Adjust size as needed */
+            height: auto;
+            z-index: 200;
+            pointer-events: none; /* Prevents image from blocking clicks/gameplay */
+        }
     </style>
 </head>
 <body id="gameBody">
+    <img src="https://iili.io/q4IJf9a.png" class="corner-image" alt="Corner Decoration">
+
     <div id="toggleContainer">
         <button class="toggle-btn" onclick="toggleNightMode(); this.blur();">&#127769; Toggle Night/Day</button>
     </div>
@@ -218,11 +231,9 @@
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 let obs = obstacles[i]; obs.x -= gameSpeed; 
                 
-                // --- ACCURATE HITBOX LOGIC ---
-                // We subtract 15px of "padding" from the player's width/height to make it pixel-accurate
                 let pX = player.x + 15; 
-                let pW = 20; // Tight width
-                let pH = 50; // Tight height
+                let pW = 20; 
+                let pH = 50; 
                 let pY = player.y - pH;
 
                 if (obs.type === 'city') {
@@ -232,11 +243,9 @@
                     for(let wx = 10; wx < obs.w - 10; wx += 15) {
                         for(let wh = 10; wh < obs.h - 10; wh += 20) { ctx.fillRect(obs.x + wx, (canvas.height - obs.h) + wh, 6, 8); }
                     }
-                    // Accurate Check for Buildings
                     if (pX < obs.x + obs.w && pX + pW > obs.x && player.y > canvas.height - obs.h) endGame();
                 } else {
                     ctx.font = '80px serif'; ctx.fillText('\u{1F681}', obs.x, obs.y);
-                    // Accurate Check for Flying Obstacles
                     if (pX < obs.x + 65 && pX + pW > obs.x && player.y - 45 < obs.y && player.y > obs.y - 40) endGame();
                 }
                 if (obs.x < -200) obstacles.splice(i, 1);
