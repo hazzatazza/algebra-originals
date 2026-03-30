@@ -152,7 +152,7 @@
             'https://media.tenor.com/UgqVjSHIq9sAAAAe/charlie-kirk-charlie-kirk-meme.png',
             'https://media.tenor.com/VKjH_tjzM6AAAAAe/ai-baby.png',
             'https://static.wikia.nocookie.net/joke-battles/images/0/05/Doge.png',
-            'https://ih1.redbubble.net/image.5820242749.8868/st,small,507x507-pad,600x600,f8f8f8.jpg', // NEW LINK
+            'https://ih1.redbubble.net/image.5820242749.8868/st,small,507x507-pad,600x600,f8f8f8.jpg',
             'https://static.wikia.nocookie.net/character-stats-and-profiles/images/5/52/Sahur2.webp',
             'https://shapes.inc/_next/image?url=https%3A%2F%2Ffiles.shapes.inc%2Fapi%2Ffiles%2Favatar_66c8fba9-44ea-44c5-a328-1b9e146fd6a4.png&w=3840&q=72',
             'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLRrzqtJa67GwJof5b-rP6l37CVzwRDnIsUg&s'
@@ -198,24 +198,24 @@
             else url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/GrimaceShake.jpg/500px-GrimaceShake.jpg';
 
             item.style.backgroundImage = `url('${url}')`;
+            
             const size = (type === 'trash') ? (85 + Math.random() * 45) : 70;
             const radius = size / 2;
             item.style.width = size + 'px'; item.style.height = size + 'px';
             
-            // RANDOM ROTATION ADDED HERE
             const randomRotation = Math.floor(Math.random() * 360);
             
             let posX = Math.random() * (window.innerWidth - size);
             let posY = -size;
             document.body.appendChild(item);
 
-            let speed = (type === 'trash') ? (5 + score / 38) : 4.5;
-            speed = Math.min(speed, 22);
+            // GENTLER SPEED SCALING: (score / 45) instead of 25
+            let speed = (type === 'trash') ? (5 + score / 45) : 4.5;
+            speed = Math.min(speed, 25); 
 
             const fall = setInterval(() => {
                 if (!gameActive) { item.remove(); clearInterval(fall); return; }
                 posY += speed;
-                // Apply translation AND the fixed random rotation
                 item.style.transform = `translate(${posX}px, ${posY}px) rotate(${randomRotation}deg)`;
 
                 const dx = (posX + radius) - pX;
@@ -239,8 +239,11 @@
                 }
             }, 16);
 
+            // GENTLER SPAWN SCALING: Maxes out at 200ms instead of 80ms
             let next;
-            if (type === 'trash') next = Math.max(140, 480 - (score * 4));
+            if (type === 'trash') {
+                next = Math.max(200, 480 - (score * 3)); 
+            }
             else if (type === 'coin') next = 3000 + Math.random() * 3000;
             else next = 11000 + Math.random() * 7000;
             
